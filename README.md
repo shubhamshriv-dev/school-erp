@@ -34,6 +34,10 @@ Open http://localhost:5173
 
 The API is http://localhost:3001/v1. The web app calls it through the Vite dev server.
 
+## Live site
+
+The public site is one Node service. It serves the website and the API together, and it uses the free Render Postgres database named in `render.yaml`. The first visit after a quiet period can take about a minute while the free server wakes up. The free database expires 30 days after it is created.
+
 Copy `apps/api/.env.example` to `apps/api/.env` if you clone this on another machine, and replace `YOUR_MAC_USERNAME` with the user `psql` prints. Do not commit real secrets.
 
 ## Where the documents live

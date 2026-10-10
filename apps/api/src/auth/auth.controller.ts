@@ -10,7 +10,7 @@ import { AuthService } from "./auth.service";
 const cookieOptions = {
   httpOnly: true,
   sameSite: "lax" as const,
-  secure: false,
+  secure: process.env.NODE_ENV === "production",
   path: "/",
   maxAge: 12 * 60 * 60 * 1000,
 };
@@ -29,7 +29,11 @@ export class AuthController {
 
   @Post("logout")
   logout(@Res({ passthrough: true }) response: Response) {
-    response.clearCookie(TOKEN_COOKIE, { path: "/" });
+    response.clearCookie(TOKEN_COOKIE, {
+      path: "/",
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+    });
     return { ok: true };
   }
 

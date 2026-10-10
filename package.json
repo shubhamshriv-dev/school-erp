@@ -5,9 +5,12 @@
   "scripts": {
     "build:shared": "pnpm --filter @school/shared build",
     "dev": "pnpm build:shared && pnpm --parallel --filter @school/api --filter @school/web dev",
+    "build": "pnpm build:shared && pnpm --filter @school/web build && pnpm --filter @school/api build",
+    "start": "pnpm --filter @school/api exec prisma db push && SEED_IF_EMPTY=1 pnpm --filter @school/api exec tsx prisma/seed.ts && pnpm --filter @school/api start",
     "db:setup": "pnpm --filter @school/api db:setup"
   },
   "engines": {
     "node": ">=22"
-  }
+  },
+  "packageManager": "pnpm@11.21.0"
 }

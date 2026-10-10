@@ -15,6 +15,14 @@ function localIso(offsetDays: number) {
 }
 
 async function main() {
+  if (process.env.SEED_IF_EMPTY === "1") {
+    const existing = await prisma.user.count();
+    if (existing > 0) {
+      console.log("Database already has users. Seed skipped.");
+      return;
+    }
+  }
+
   await prisma.payment.deleteMany();
   await prisma.attendanceRecord.deleteMany();
   await prisma.invoice.deleteMany();
