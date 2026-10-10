@@ -6,7 +6,7 @@ import {
 } from "@nestjs/common";
 import { InvoiceStatus, PaymentMode, Prisma } from "@prisma/client";
 import { PaymentInput } from "@school/shared";
-import { formatDbDate, localDate } from "../common/dates";
+import { asDbDate, formatDbDate, localDate } from "../common/dates";
 import { paidTotal, rupees } from "../common/money";
 import { visibleStudentIds } from "../common/scope";
 import { AuthUser } from "../common/auth.types";
@@ -141,5 +141,45 @@ export class FeesService {
         paidAt: payment.paidAt.toISOString(),
       })),
     };
+  }
+
+  async issueTuitionInvoice(
+    db: Prisma.TransactionClient,
+    input: {
+      tenantId: string;
+      campusId: string;
+      legalEntityId: string;
+      studentId: string;
+      gradeId: string;
+      academicYearId: string;
+    },
+  ) {
+    const plan = await db.feePlan.findFirst({
+      where: {
+        tenantId: input.tenantId,
+        gradeId: input.gradeId,
+        academicYearId: input.academicYearId,
+      },
+    });
+    if (!plan) {
+      throw new BadRequestException("This grade has no tuition plan yet");
+    }
+    const count = await db.invoice.count({ where: { legalEntityId: input.legalEntityId } });
+    const due = new Date();
+    due.setDate(due.getDate() + 30);
+    const dueIso = localDate(30);
+    return db.invoice.create({
+      data: {
+        tenantId: input.tenantId,
+        campusId: input.campusId,
+        legalEntityId: input.legalEntityId,
+        studentId: input.studentId,
+        feePlanId: plan.id,
+        invoiceNo: `INV-${due.getFullYear()}-${String(count + 1).padStart(4, "0")}`,
+        amount: plan.amount,
+        dueDate: asDbDate(dueIso),
+        status: InvoiceStatus.ISSUED,
+      },
+    });
   }
 }

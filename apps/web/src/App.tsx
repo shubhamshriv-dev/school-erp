@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import { api, SessionUser } from "./api";
 import { Shell } from "./Shell";
+import { AdmissionsPage } from "./pages/AdmissionsPage";
 import { AttendancePage } from "./pages/AttendancePage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { FeesPage } from "./pages/FeesPage";
@@ -64,6 +65,7 @@ export function App() {
         <Route element={user ? <Shell /> : <Navigate to="/login" replace />}>
           <Route index element={<DashboardPage />} />
           <Route path="setup" element={<SetupPage />} />
+          <Route path="admissions" element={<AdmissionsPage />} />
           <Route path="students" element={<StudentsPage />} />
           <Route path="students/:id" element={<StudentPage />} />
           <Route path="attendance" element={<AttendancePage />} />

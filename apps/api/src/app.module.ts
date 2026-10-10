@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
+import { AdmissionsModule } from "./admissions/admissions.module";
 import { AttendanceModule } from "./attendance/attendance.module";
 import { AuthModule } from "./auth/auth.module";
 import { DashboardModule } from "./dashboard/dashboard.module";
@@ -16,6 +17,7 @@ import { StudentsModule } from "./students/students.module";
     AuthModule,
     SetupModule,
     StudentsModule,
+    AdmissionsModule,
     AttendanceModule,
     FeesModule,
     DashboardModule,

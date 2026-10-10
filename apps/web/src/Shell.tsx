@@ -4,6 +4,7 @@ import { useAuth } from "./App";
 const links = [
   { to: "/", label: "Home", roles: ["ADMIN", "TEACHER", "PARENT"] },
   { to: "/setup", label: "Setup", roles: ["ADMIN"] },
+  { to: "/admissions", label: "Admissions", roles: ["ADMIN"] },
   { to: "/students", label: "Students", roles: ["ADMIN", "TEACHER", "PARENT"] },
   { to: "/attendance", label: "Attendance", roles: ["ADMIN", "TEACHER"] },
   { to: "/fees", label: "Fees", roles: ["ADMIN", "PARENT"] },

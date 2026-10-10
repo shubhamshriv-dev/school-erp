@@ -41,6 +41,24 @@ enum PaymentMode {
   BANK_TRANSFER
 }
 
+enum EnquiryStatus {
+  NEW
+  CONTACTED
+  APPLIED
+  OFFERED
+  ENROLLED
+  REJECTED
+  WITHDRAWN
+}
+
+enum EnquirySource {
+  WALK_IN
+  WEB
+  REFERRAL
+  AD
+  EVENT
+}
+
 model Tenant {
   id        String        @id @default(uuid()) @db.Uuid
   name      String
@@ -80,6 +98,7 @@ model Campus {
   grades        Grade[]
   sections      Section[]
   students      Student[]
+  enquiries     Enquiry[]
 
   @@unique([tenantId, code])
   @@index([tenantId])
@@ -98,6 +117,7 @@ model AcademicYear {
   grades     Grade[]
   enrolments Enrolment[]
   feePlans   FeePlan[]
+  enquiries  Enquiry[]
 
   @@unique([campusId, name])
   @@index([tenantId, campusId])
@@ -115,6 +135,7 @@ model Grade {
   sections       Section[]
   feePlans       FeePlan[]
   enrolments     Enrolment[]
+  enquiries      Enquiry[]
 
   @@unique([academicYearId, name])
   @@index([tenantId, campusId])
@@ -173,6 +194,7 @@ model Student {
   enrolments  Enrolment[]
   attendance  AttendanceRecord[]
   invoices    Invoice[]
+  enquiry     Enquiry?
 
   @@unique([tenantId, admissionNo])
   @@index([tenantId, campusId])
@@ -298,6 +320,33 @@ model Invoice {
   @@unique([legalEntityId, invoiceNo])
   @@index([tenantId, campusId])
   @@map("fee_invoices")
+}
+
+model Enquiry {
+  id             String         @id @default(uuid()) @db.Uuid
+  tenantId       String         @map("tenant_id") @db.Uuid
+  campusId       String         @map("campus_id") @db.Uuid
+  academicYearId String         @map("academic_year_id") @db.Uuid
+  gradeId        String         @map("grade_id") @db.Uuid
+  childName      String         @map("child_name")
+  dateOfBirth    DateTime       @map("date_of_birth") @db.Date
+  gender         String?
+  parentName     String         @map("parent_name")
+  parentMobile   String         @map("parent_mobile")
+  parentEmail    String?        @map("parent_email")
+  source         EnquirySource
+  remarks        String?
+  consentAt      DateTime       @map("consent_at")
+  status         EnquiryStatus  @default(NEW)
+  studentId      String?        @unique @map("student_id") @db.Uuid
+  createdAt      DateTime       @default(now()) @map("created_at")
+  campus         Campus         @relation(fields: [campusId], references: [id])
+  academicYear   AcademicYear   @relation(fields: [academicYearId], references: [id])
+  grade          Grade          @relation(fields: [gradeId], references: [id])
+  student        Student?       @relation(fields: [studentId], references: [id])
+
+  @@index([tenantId, campusId, status])
+  @@map("adm_enquiries")
 }
 
 model Payment {

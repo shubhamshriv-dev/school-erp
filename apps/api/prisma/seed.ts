@@ -23,6 +23,7 @@ async function main() {
     }
   }
 
+  await prisma.enquiry.deleteMany();
   await prisma.payment.deleteMany();
   await prisma.attendanceRecord.deleteMany();
   await prisma.invoice.deleteMany();
@@ -323,6 +324,42 @@ async function main() {
   for (const student of grade6Students) {
     await enrol(student, grade6.id, section6.id, plan6.id, 52000);
   }
+
+  await prisma.enquiry.createMany({
+    data: [
+      {
+        tenantId: tenant.id,
+        campusId: campus.id,
+        academicYearId: year.id,
+        gradeId: grade5.id,
+        childName: "Reyansh Kulkarni",
+        dateOfBirth: day("2015-07-08"),
+        gender: "Male",
+        parentName: "Sneha Kulkarni",
+        parentMobile: "9845011122",
+        parentEmail: "sneha.kulkarni@example.com",
+        source: "WALK_IN",
+        remarks: "Visited the campus on Saturday",
+        consentAt: new Date(),
+        status: "CONTACTED",
+      },
+      {
+        tenantId: tenant.id,
+        campusId: campus.id,
+        academicYearId: year.id,
+        gradeId: grade6.id,
+        childName: "Aisha Qureshi",
+        dateOfBirth: day("2014-10-22"),
+        gender: "Female",
+        parentName: "Imran Qureshi",
+        parentMobile: "9845033344",
+        parentEmail: "imran.qureshi@example.com",
+        source: "WEB",
+        consentAt: new Date(),
+        status: "APPLIED",
+      },
+    ],
+  });
 
   console.log("Seeded Riverside Public School");
   console.log("Admin   anita.deshpande@riverside.edu  Admin@123");
