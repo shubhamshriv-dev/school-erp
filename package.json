@@ -10,7 +10,7 @@
     "db:setup": "pnpm --filter @school/api db:setup"
   },
   "engines": {
-    "node": ">=22"
+    "node": "22.x"
   },
   "packageManager": "pnpm@11.21.0"
 }

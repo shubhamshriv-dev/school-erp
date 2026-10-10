@@ -3,8 +3,8 @@ services:
     name: school-erp
     runtime: node
     plan: free
-    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm build
-    startCommand: pnpm start
+    buildCommand: corepack pnpm install --frozen-lockfile --prod=false && corepack pnpm build
+    startCommand: corepack pnpm start
     healthCheckPath: /v1/health
     envVars:
       - key: NODE_ENV
