@@ -1,0 +1,21 @@
+---
+description: School ERP build rules from the architecture and requirements documents
+alwaysApply: true
+---
+
+# School ERP
+
+Source of truth: `docs/prd.md` (what to build, from the requirements document) and `docs/architecture.md` (how to build it).
+
+Version 1 covers platform auth, setup, students, daily attendance, and simple counter fees. Do not invent modules outside that slice unless asked.
+
+Rules:
+
+- Modular monolith. Stay inside the module you are asked to change.
+- Never write to another module's tables from a different module's service.
+- Every table has `tenant_id`. Campus-scoped tables also have `campus_id`.
+- Fee payments are append-only. Invoice amounts do not change. A correction is a new payment row.
+- Retryable payment posts accept `Idempotency-Key`.
+- Validate writes with Zod schemas from `packages/shared`.
+- Enforce role and campus scope in the service. Parents see only linked children. Teachers edit only their class.
+- Do not put secrets in git.

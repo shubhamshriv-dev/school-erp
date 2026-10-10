@@ -1,0 +1,13 @@
+{
+  "name": "school-erp",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "build:shared": "pnpm --filter @school/shared build",
+    "dev": "pnpm build:shared && pnpm --parallel --filter @school/api --filter @school/web dev",
+    "db:setup": "pnpm --filter @school/api db:setup"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

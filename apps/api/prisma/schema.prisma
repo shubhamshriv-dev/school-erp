@@ -1,0 +1,320 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  TEACHER
+  PARENT
+}
+
+enum StudentStatus {
+  ACTIVE
+  TRANSFERRED
+  WITHDRAWN
+  ALUMNI
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EARLY_LEAVE
+  LEAVE
+}
+
+enum InvoiceStatus {
+  ISSUED
+  PARTLY_PAID
+  PAID
+  CANCELLED
+}
+
+enum PaymentMode {
+  CASH
+  UPI
+  BANK_TRANSFER
+}
+
+model Tenant {
+  id        String        @id @default(uuid()) @db.Uuid
+  name      String
+  createdAt DateTime      @default(now()) @map("created_at")
+  entities  LegalEntity[]
+  campuses  Campus[]
+  users     User[]
+
+  @@map("set_tenants")
+}
+
+model LegalEntity {
+  id       String    @id @default(uuid()) @db.Uuid
+  tenantId String    @map("tenant_id") @db.Uuid
+  name     String
+  tenant   Tenant    @relation(fields: [tenantId], references: [id])
+  campuses Campus[]
+  invoices Invoice[]
+
+  @@index([tenantId])
+  @@map("set_legal_entities")
+}
+
+model Campus {
+  id            String         @id @default(uuid()) @db.Uuid
+  tenantId      String         @map("tenant_id") @db.Uuid
+  legalEntityId String         @map("legal_entity_id") @db.Uuid
+  name          String
+  code          String
+  board         String
+  city          String
+  pin           String
+  status        String         @default("Active")
+  tenant        Tenant         @relation(fields: [tenantId], references: [id])
+  legalEntity   LegalEntity    @relation(fields: [legalEntityId], references: [id])
+  years         AcademicYear[]
+  grades        Grade[]
+  sections      Section[]
+  students      Student[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@map("set_campuses")
+}
+
+model AcademicYear {
+  id         String    @id @default(uuid()) @db.Uuid
+  tenantId   String    @map("tenant_id") @db.Uuid
+  campusId   String    @map("campus_id") @db.Uuid
+  name       String
+  startDate  DateTime  @map("start_date") @db.Date
+  endDate    DateTime  @map("end_date") @db.Date
+  status     String
+  campus     Campus    @relation(fields: [campusId], references: [id])
+  grades     Grade[]
+  enrolments Enrolment[]
+  feePlans   FeePlan[]
+
+  @@unique([campusId, name])
+  @@index([tenantId, campusId])
+  @@map("set_academic_years")
+}
+
+model Grade {
+  id             String       @id @default(uuid()) @db.Uuid
+  tenantId       String       @map("tenant_id") @db.Uuid
+  campusId       String       @map("campus_id") @db.Uuid
+  academicYearId String       @map("academic_year_id") @db.Uuid
+  name           String
+  campus         Campus       @relation(fields: [campusId], references: [id])
+  academicYear   AcademicYear @relation(fields: [academicYearId], references: [id])
+  sections       Section[]
+  feePlans       FeePlan[]
+  enrolments     Enrolment[]
+
+  @@unique([academicYearId, name])
+  @@index([tenantId, campusId])
+  @@map("set_grades")
+}
+
+model Section {
+  id             String             @id @default(uuid()) @db.Uuid
+  tenantId       String             @map("tenant_id") @db.Uuid
+  campusId       String             @map("campus_id") @db.Uuid
+  gradeId        String             @map("grade_id") @db.Uuid
+  name           String
+  capacity       Int
+  classTeacherId String?            @map("class_teacher_id") @db.Uuid
+  grade          Grade              @relation(fields: [gradeId], references: [id])
+  campus         Campus             @relation(fields: [campusId], references: [id])
+  classTeacher   User?              @relation(fields: [classTeacherId], references: [id])
+  enrolments     Enrolment[]
+  attendance     AttendanceRecord[]
+
+  @@unique([gradeId, name])
+  @@index([tenantId, campusId])
+  @@map("set_sections")
+}
+
+model User {
+  id               String             @id @default(uuid()) @db.Uuid
+  tenantId         String             @map("tenant_id") @db.Uuid
+  campusId         String?            @map("campus_id") @db.Uuid
+  email            String
+  passwordHash     String             @map("password_hash")
+  name             String
+  role             UserRole
+  tenant           Tenant             @relation(fields: [tenantId], references: [id])
+  sections         Section[]
+  guardian         Guardian?
+  attendanceMarked AttendanceRecord[] @relation("markedBy")
+  paymentsRecorded Payment[]          @relation("recordedBy")
+
+  @@unique([tenantId, email])
+  @@index([tenantId])
+  @@map("plt_users")
+}
+
+model Student {
+  id          String             @id @default(uuid()) @db.Uuid
+  tenantId    String             @map("tenant_id") @db.Uuid
+  campusId    String             @map("campus_id") @db.Uuid
+  admissionNo String             @map("admission_no")
+  fullName    String             @map("full_name")
+  dateOfBirth DateTime           @map("date_of_birth") @db.Date
+  gender      String?
+  status      StudentStatus      @default(ACTIVE)
+  campus      Campus             @relation(fields: [campusId], references: [id])
+  guardians   GuardianLink[]
+  enrolments  Enrolment[]
+  attendance  AttendanceRecord[]
+  invoices    Invoice[]
+
+  @@unique([tenantId, admissionNo])
+  @@index([tenantId, campusId])
+  @@map("sis_students")
+}
+
+model Guardian {
+  id       String         @id @default(uuid()) @db.Uuid
+  tenantId String         @map("tenant_id") @db.Uuid
+  userId   String?        @unique @map("user_id") @db.Uuid
+  name     String
+  mobile   String
+  email    String?
+  user     User?          @relation(fields: [userId], references: [id])
+  links    GuardianLink[]
+
+  @@index([tenantId])
+  @@map("sis_guardians")
+}
+
+model GuardianLink {
+  id         String   @id @default(uuid()) @db.Uuid
+  tenantId   String   @map("tenant_id") @db.Uuid
+  guardianId String   @map("guardian_id") @db.Uuid
+  studentId  String   @map("student_id") @db.Uuid
+  relation   String
+  isPrimary  Boolean  @default(false) @map("is_primary")
+  guardian   Guardian @relation(fields: [guardianId], references: [id])
+  student    Student  @relation(fields: [studentId], references: [id])
+
+  @@unique([guardianId, studentId])
+  @@index([tenantId])
+  @@map("sis_guardian_links")
+}
+
+model Enrolment {
+  id             String       @id @default(uuid()) @db.Uuid
+  tenantId       String       @map("tenant_id") @db.Uuid
+  campusId       String       @map("campus_id") @db.Uuid
+  studentId      String       @map("student_id") @db.Uuid
+  academicYearId String       @map("academic_year_id") @db.Uuid
+  gradeId        String       @map("grade_id") @db.Uuid
+  sectionId      String       @map("section_id") @db.Uuid
+  rollNo         Int          @map("roll_no")
+  student        Student      @relation(fields: [studentId], references: [id])
+  academicYear   AcademicYear @relation(fields: [academicYearId], references: [id])
+  grade          Grade        @relation(fields: [gradeId], references: [id])
+  section        Section      @relation(fields: [sectionId], references: [id])
+
+  @@unique([studentId, academicYearId])
+  @@unique([sectionId, rollNo])
+  @@index([tenantId, campusId])
+  @@map("sis_enrolments")
+}
+
+model AttendanceRecord {
+  id         String           @id @default(uuid()) @db.Uuid
+  tenantId   String           @map("tenant_id") @db.Uuid
+  campusId   String           @map("campus_id") @db.Uuid
+  studentId  String           @map("student_id") @db.Uuid
+  sectionId  String           @map("section_id") @db.Uuid
+  date       DateTime         @db.Date
+  status     AttendanceStatus
+  remarks    String?
+  markedById String           @map("marked_by_id") @db.Uuid
+  createdAt  DateTime         @default(now()) @map("created_at")
+  student    Student          @relation(fields: [studentId], references: [id])
+  section    Section          @relation(fields: [sectionId], references: [id])
+  markedBy   User             @relation("markedBy", fields: [markedById], references: [id])
+
+  @@unique([studentId, date])
+  @@index([tenantId, campusId, date])
+  @@map("att_attendance_records")
+}
+
+model FeeHead {
+  id       String    @id @default(uuid()) @db.Uuid
+  tenantId String    @map("tenant_id") @db.Uuid
+  campusId String    @map("campus_id") @db.Uuid
+  name     String
+  code     String
+  plans    FeePlan[]
+
+  @@unique([campusId, code])
+  @@index([tenantId])
+  @@map("fee_heads")
+}
+
+model FeePlan {
+  id             String       @id @default(uuid()) @db.Uuid
+  tenantId       String       @map("tenant_id") @db.Uuid
+  campusId       String       @map("campus_id") @db.Uuid
+  academicYearId String       @map("academic_year_id") @db.Uuid
+  gradeId        String       @map("grade_id") @db.Uuid
+  feeHeadId      String       @map("fee_head_id") @db.Uuid
+  name           String
+  amount         Decimal      @db.Decimal(12, 2)
+  academicYear   AcademicYear @relation(fields: [academicYearId], references: [id])
+  grade          Grade        @relation(fields: [gradeId], references: [id])
+  feeHead        FeeHead      @relation(fields: [feeHeadId], references: [id])
+  invoices       Invoice[]
+
+  @@index([tenantId, campusId])
+  @@map("fee_plans")
+}
+
+model Invoice {
+  id            String        @id @default(uuid()) @db.Uuid
+  tenantId      String        @map("tenant_id") @db.Uuid
+  campusId      String        @map("campus_id") @db.Uuid
+  legalEntityId String        @map("legal_entity_id") @db.Uuid
+  studentId     String        @map("student_id") @db.Uuid
+  feePlanId     String        @map("fee_plan_id") @db.Uuid
+  invoiceNo     String        @map("invoice_no")
+  amount        Decimal       @db.Decimal(12, 2)
+  dueDate       DateTime      @map("due_date") @db.Date
+  status        InvoiceStatus @default(ISSUED)
+  student       Student       @relation(fields: [studentId], references: [id])
+  feePlan       FeePlan       @relation(fields: [feePlanId], references: [id])
+  legalEntity   LegalEntity   @relation(fields: [legalEntityId], references: [id])
+  payments      Payment[]
+
+  @@unique([legalEntityId, invoiceNo])
+  @@index([tenantId, campusId])
+  @@map("fee_invoices")
+}
+
+model Payment {
+  id             String      @id @default(uuid()) @db.Uuid
+  tenantId       String      @map("tenant_id") @db.Uuid
+  campusId       String      @map("campus_id") @db.Uuid
+  invoiceId      String      @map("invoice_id") @db.Uuid
+  amount         Decimal     @db.Decimal(12, 2)
+  mode           PaymentMode
+  receiptNo      String      @map("receipt_no")
+  idempotencyKey String?     @unique @map("idempotency_key")
+  recordedById   String      @map("recorded_by_id") @db.Uuid
+  paidAt         DateTime    @default(now()) @map("paid_at")
+  invoice        Invoice     @relation(fields: [invoiceId], references: [id])
+  recordedBy     User        @relation("recordedBy", fields: [recordedById], references: [id])
+
+  @@unique([campusId, receiptNo])
+  @@index([tenantId])
+  @@map("fee_payments")
+}
