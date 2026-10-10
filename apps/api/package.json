@@ -18,6 +18,7 @@
     "@school/shared": "workspace:*",
     "bcryptjs": "^3.0.2",
     "cookie-parser": "^1.4.7",
+    "express": "^5.2.1",
     "jsonwebtoken": "^9.0.2",
     "prisma": "^6.16.2",
     "reflect-metadata": "^0.2.2",
