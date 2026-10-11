@@ -7,7 +7,7 @@ alwaysApply: true
 
 Source of truth: `docs/prd.md` (what to build, from the requirements document) and `docs/architecture.md` (how to build it).
 
-Version 1 covers platform auth, setup, students, daily attendance, and simple counter fees. Do not invent modules outside that slice unless asked.
+The demo covers platform auth, setup, students, admissions, daily attendance, simple counter fees, exams with report cards, notices, bonafide certificates, and the weekly timetable. Do not invent modules outside that slice unless asked.
 
 Rules:
 

@@ -72,9 +72,74 @@ export const enrolSchema = z.object({
   sectionId: z.string().uuid(),
 });
 
+export const examSubjectSchema = z.object({
+  name: z.string().trim().min(2).max(40),
+  maxMarks: z.number().int().min(1).max(200),
+});
+
+export const examSchema = z.object({
+  name: z.string().trim().min(2).max(40),
+  gradeId: z.string().uuid(),
+  subjects: z.array(examSubjectSchema).min(1).max(12),
+});
+
+export const markRecordSchema = z.object({
+  studentId: z.string().uuid(),
+  subjectId: z.string().uuid(),
+  marks: z.number().int().min(0).max(200).nullable(),
+});
+
+export const marksSubmitSchema = z.object({
+  sectionId: z.string().uuid(),
+  records: z.array(markRecordSchema).min(1),
+});
+
+export const noticeSchema = z.discriminatedUnion("audience", [
+  z.object({
+    audience: z.literal("SCHOOL"),
+    title: z.string().trim().min(2).max(80),
+    body: z.string().trim().min(2).max(1000),
+  }),
+  z.object({
+    audience: z.literal("GRADE"),
+    title: z.string().trim().min(2).max(80),
+    body: z.string().trim().min(2).max(1000),
+    gradeId: z.string().uuid(),
+  }),
+]);
+
 export type LoginInput = z.infer<typeof loginSchema>;
 export type AttendanceSubmitInput = z.infer<typeof attendanceSubmitSchema>;
 export type PaymentInput = z.infer<typeof paymentSchema>;
 export type EnquiryInput = z.infer<typeof enquirySchema>;
 export type EnquiryStatusInput = z.infer<typeof enquiryStatusSchema>;
 export type EnrolInput = z.infer<typeof enrolSchema>;
+export type ExamInput = z.infer<typeof examSchema>;
+export type MarksSubmitInput = z.infer<typeof marksSubmitSchema>;
+export type NoticeInput = z.infer<typeof noticeSchema>;
+
+export const certificateSchema = z.object({
+  studentId: z.string().uuid(),
+  purpose: z.string().trim().min(2).max(120),
+});
+
+export type CertificateInput = z.infer<typeof certificateSchema>;
+
+export const weekdays = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"] as const;
+export type Weekday = (typeof weekdays)[number];
+
+const clockTime = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/);
+
+export const timetablePeriodSchema = z.object({
+  day: z.enum(weekdays),
+  startTime: clockTime,
+  endTime: clockTime,
+  subject: z.string().trim().min(2).max(40),
+});
+
+export const timetableSchema = z.object({
+  sectionId: z.string().uuid(),
+  periods: z.array(timetablePeriodSchema).max(40),
+});
+
+export type TimetableInput = z.infer<typeof timetableSchema>;

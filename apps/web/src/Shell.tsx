@@ -8,6 +8,11 @@ const links = [
   { to: "/students", label: "Students", roles: ["ADMIN", "TEACHER", "PARENT"] },
   { to: "/attendance", label: "Attendance", roles: ["ADMIN", "TEACHER"] },
   { to: "/fees", label: "Fees", roles: ["ADMIN", "PARENT"] },
+  { to: "/exams", label: "Exams", roles: ["ADMIN", "TEACHER"] },
+  { to: "/report-cards", label: "Report cards", roles: ["ADMIN", "TEACHER", "PARENT"] },
+  { to: "/notices", label: "Notices", roles: ["ADMIN", "TEACHER", "PARENT"] },
+  { to: "/certificates", label: "Certificates", roles: ["ADMIN", "TEACHER", "PARENT"] },
+  { to: "/timetable", label: "Timetable", roles: ["ADMIN", "TEACHER", "PARENT"] },
 ];
 
 export function Shell() {

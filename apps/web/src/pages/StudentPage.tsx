@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { api, inr, statusLabel } from "../api";
 import { PageTitle } from "./DashboardPage";
 
@@ -44,7 +44,13 @@ export function StudentPage() {
       />
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
         <section className="rounded-2xl border border-line bg-card p-5">
-          <h2 className="text-2xl">Record</h2>
+          <Link className="text-sm text-clay" to={`/report-cards/${student.id}`}>
+            Open report card
+          </Link>
+          <Link className="mt-2 block text-sm text-clay" to="/certificates">
+            Certificates
+          </Link>
+          <h2 className="mt-4 text-2xl">Record</h2>
           <dl className="mt-3 grid grid-cols-2 gap-3 text-sm">
             <Field label="Campus" value={student.campus} />
             <Field label="Year" value={student.academicYear ?? "—"} />

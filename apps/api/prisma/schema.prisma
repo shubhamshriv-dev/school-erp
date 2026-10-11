@@ -59,6 +59,24 @@ enum EnquirySource {
   EVENT
 }
 
+enum ExamStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum NoticeAudience {
+  SCHOOL
+  GRADE
+}
+
+enum Weekday {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+}
+
 model Tenant {
   id        String        @id @default(uuid()) @db.Uuid
   name      String
@@ -99,6 +117,11 @@ model Campus {
   sections      Section[]
   students      Student[]
   enquiries     Enquiry[]
+  subjects      Subject[]
+  exams         Exam[]
+  notices       Notice[]
+  certificates  Certificate[]
+  periods       TimetablePeriod[]
 
   @@unique([tenantId, code])
   @@index([tenantId])
@@ -118,6 +141,8 @@ model AcademicYear {
   enrolments Enrolment[]
   feePlans   FeePlan[]
   enquiries  Enquiry[]
+  exams      Exam[]
+  notices    Notice[]
 
   @@unique([campusId, name])
   @@index([tenantId, campusId])
@@ -136,6 +161,8 @@ model Grade {
   feePlans       FeePlan[]
   enrolments     Enrolment[]
   enquiries      Enquiry[]
+  subjects       Subject[]
+  notices        Notice[]
 
   @@unique([academicYearId, name])
   @@index([tenantId, campusId])
@@ -155,6 +182,7 @@ model Section {
   classTeacher   User?              @relation(fields: [classTeacherId], references: [id])
   enrolments     Enrolment[]
   attendance     AttendanceRecord[]
+  periods        TimetablePeriod[]
 
   @@unique([gradeId, name])
   @@index([tenantId, campusId])
@@ -174,6 +202,9 @@ model User {
   guardian         Guardian?
   attendanceMarked AttendanceRecord[] @relation("markedBy")
   paymentsRecorded Payment[]          @relation("recordedBy")
+  marksEntered     Mark[]             @relation("enteredBy")
+  noticesPosted    Notice[]           @relation("postedBy")
+  certificatesIssued Certificate[]     @relation("issuedBy")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -195,6 +226,8 @@ model Student {
   attendance  AttendanceRecord[]
   invoices    Invoice[]
   enquiry     Enquiry?
+  marks       Mark[]
+  certificates Certificate[]
 
   @@unique([tenantId, admissionNo])
   @@index([tenantId, campusId])
@@ -366,4 +399,134 @@ model Payment {
   @@unique([campusId, receiptNo])
   @@index([tenantId])
   @@map("fee_payments")
+}
+
+model Subject {
+  id           String        @id @default(uuid()) @db.Uuid
+  tenantId     String        @map("tenant_id") @db.Uuid
+  campusId     String        @map("campus_id") @db.Uuid
+  gradeId      String        @map("grade_id") @db.Uuid
+  name         String
+  code         String
+  maxMarks     Int           @map("max_marks")
+  grade        Grade         @relation(fields: [gradeId], references: [id])
+  campus       Campus        @relation(fields: [campusId], references: [id])
+  examSubjects ExamSubject[]
+  marks        Mark[]
+
+  @@unique([gradeId, code])
+  @@index([tenantId, campusId])
+  @@map("aca_subjects")
+}
+
+model Exam {
+  id             String        @id @default(uuid()) @db.Uuid
+  tenantId       String        @map("tenant_id") @db.Uuid
+  campusId       String        @map("campus_id") @db.Uuid
+  academicYearId String        @map("academic_year_id") @db.Uuid
+  name           String
+  status         ExamStatus    @default(DRAFT)
+  academicYear   AcademicYear  @relation(fields: [academicYearId], references: [id])
+  campus         Campus        @relation(fields: [campusId], references: [id])
+  examSubjects   ExamSubject[]
+  marks          Mark[]
+
+  @@unique([academicYearId, name])
+  @@index([tenantId, campusId])
+  @@map("aca_exams")
+}
+
+model ExamSubject {
+  id        String  @id @default(uuid()) @db.Uuid
+  tenantId  String  @map("tenant_id") @db.Uuid
+  campusId  String  @map("campus_id") @db.Uuid
+  examId    String  @map("exam_id") @db.Uuid
+  subjectId String  @map("subject_id") @db.Uuid
+  exam      Exam    @relation(fields: [examId], references: [id])
+  subject   Subject @relation(fields: [subjectId], references: [id])
+
+  @@unique([examId, subjectId])
+  @@index([tenantId, campusId])
+  @@map("aca_exam_subjects")
+}
+
+model Mark {
+  id          String  @id @default(uuid()) @db.Uuid
+  tenantId    String  @map("tenant_id") @db.Uuid
+  campusId    String  @map("campus_id") @db.Uuid
+  examId      String  @map("exam_id") @db.Uuid
+  subjectId   String  @map("subject_id") @db.Uuid
+  studentId   String  @map("student_id") @db.Uuid
+  marks       Int
+  enteredById String  @map("entered_by_id") @db.Uuid
+  exam        Exam    @relation(fields: [examId], references: [id])
+  subject     Subject @relation(fields: [subjectId], references: [id])
+  student     Student @relation(fields: [studentId], references: [id])
+  enteredBy   User    @relation("enteredBy", fields: [enteredById], references: [id])
+
+  @@unique([examId, subjectId, studentId])
+  @@index([tenantId, campusId])
+  @@map("aca_marks")
+}
+
+model Notice {
+  id             String          @id @default(uuid()) @db.Uuid
+  tenantId       String          @map("tenant_id") @db.Uuid
+  campusId       String          @map("campus_id") @db.Uuid
+  academicYearId String          @map("academic_year_id") @db.Uuid
+  gradeId        String?         @map("grade_id") @db.Uuid
+  audience       NoticeAudience
+  title          String
+  body           String
+  createdById    String          @map("created_by_id") @db.Uuid
+  createdAt      DateTime        @default(now()) @map("created_at")
+  campus         Campus          @relation(fields: [campusId], references: [id])
+  academicYear   AcademicYear    @relation(fields: [academicYearId], references: [id])
+  grade          Grade?          @relation(fields: [gradeId], references: [id])
+  createdBy      User            @relation("postedBy", fields: [createdById], references: [id])
+
+  @@index([tenantId, campusId, createdAt])
+  @@map("com_notices")
+}
+
+model Certificate {
+  id               String   @id @default(uuid()) @db.Uuid
+  tenantId         String   @map("tenant_id") @db.Uuid
+  campusId         String   @map("campus_id") @db.Uuid
+  studentId        String   @map("student_id") @db.Uuid
+  certificateNo    String   @map("certificate_no")
+  purpose          String
+  studentName      String   @map("student_name")
+  admissionNo      String   @map("admission_no")
+  gradeName        String   @map("grade_name")
+  sectionName      String   @map("section_name")
+  academicYearName String   @map("academic_year_name")
+  campusName       String   @map("campus_name")
+  issuedOn         DateTime @map("issued_on") @db.Date
+  issuedById       String   @map("issued_by_id") @db.Uuid
+  createdAt        DateTime @default(now()) @map("created_at")
+  student          Student  @relation(fields: [studentId], references: [id])
+  campus           Campus   @relation(fields: [campusId], references: [id])
+  issuedBy         User     @relation("issuedBy", fields: [issuedById], references: [id])
+
+  @@unique([campusId, certificateNo])
+  @@index([tenantId, campusId])
+  @@map("cer_certificates")
+}
+
+model TimetablePeriod {
+  id        String  @id @default(uuid()) @db.Uuid
+  tenantId  String  @map("tenant_id") @db.Uuid
+  campusId  String  @map("campus_id") @db.Uuid
+  sectionId String  @map("section_id") @db.Uuid
+  day       Weekday
+  startTime String  @map("start_time")
+  endTime   String  @map("end_time")
+  subject   String
+  campus    Campus  @relation(fields: [campusId], references: [id])
+  section   Section @relation(fields: [sectionId], references: [id])
+
+  @@unique([sectionId, day, startTime])
+  @@index([tenantId, campusId])
+  @@map("tt_periods")
 }

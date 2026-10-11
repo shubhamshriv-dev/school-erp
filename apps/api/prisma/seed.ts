@@ -23,6 +23,13 @@ async function main() {
     }
   }
 
+  await prisma.timetablePeriod.deleteMany();
+  await prisma.certificate.deleteMany();
+  await prisma.notice.deleteMany();
+  await prisma.mark.deleteMany();
+  await prisma.examSubject.deleteMany();
+  await prisma.exam.deleteMany();
+  await prisma.subject.deleteMany();
   await prisma.enquiry.deleteMany();
   await prisma.payment.deleteMany();
   await prisma.attendanceRecord.deleteMany();
@@ -359,6 +366,189 @@ async function main() {
         status: "APPLIED",
       },
     ],
+  });
+
+  const grade5SubjectRows = [
+    ["English", "ENGLISH"],
+    ["Hindi", "HINDI"],
+    ["Mathematics", "MATHEMATICS"],
+    ["Environmental Studies", "EVS"],
+  ] as const;
+  const grade5SubjectIds: string[] = [];
+  for (const [name, code] of grade5SubjectRows) {
+    const subject = await prisma.subject.create({
+      data: {
+        tenantId: tenant.id,
+        campusId: campus.id,
+        gradeId: grade5.id,
+        name,
+        code,
+        maxMarks: 100,
+      },
+    });
+    grade5SubjectIds.push(subject.id);
+  }
+
+  const grade6SubjectRows = ["English", "Hindi", "Mathematics", "Science", "Social Science"] as const;
+  for (const name of grade6SubjectRows) {
+    const subject = await prisma.subject.create({
+      data: {
+        tenantId: tenant.id,
+        campusId: campus.id,
+        gradeId: grade6.id,
+        name,
+        code: name.toUpperCase().replace(/ /g, "_"),
+        maxMarks: 100,
+      },
+    });
+    await prisma.examSubject.create({
+      data: {
+        tenantId: tenant.id,
+        campusId: campus.id,
+        examId: (
+          await prisma.exam.upsert({
+            where: { academicYearId_name: { academicYearId: year.id, name: "Term 1" } },
+            create: {
+              tenantId: tenant.id,
+              campusId: campus.id,
+              academicYearId: year.id,
+              name: "Term 1",
+              status: "PUBLISHED",
+            },
+            update: {},
+          })
+        ).id,
+        subjectId: subject.id,
+      },
+    });
+  }
+
+  const term1 = await prisma.exam.findFirstOrThrow({
+    where: { academicYearId: year.id, name: "Term 1" },
+  });
+  for (const subjectId of grade5SubjectIds) {
+    await prisma.examSubject.create({
+      data: {
+        tenantId: tenant.id,
+        campusId: campus.id,
+        examId: term1.id,
+        subjectId,
+      },
+    });
+  }
+
+  const term2 = await prisma.exam.create({
+    data: {
+      tenantId: tenant.id,
+      campusId: campus.id,
+      academicYearId: year.id,
+      name: "Term 2",
+      status: "DRAFT",
+    },
+  });
+  for (const subjectId of grade5SubjectIds) {
+    await prisma.examSubject.create({
+      data: {
+        tenantId: tenant.id,
+        campusId: campus.id,
+        examId: term2.id,
+        subjectId,
+      },
+    });
+  }
+
+  const grade5MarkSheet: Record<string, number[]> = {
+    "RPS-2401": [86, 78, 92, 81],
+    "RPS-2402": [74, 88, 69, 90],
+    "RPS-2403": [91, 84, 88, 79],
+    "RPS-2404": [67, 73, 81, 76],
+    "RPS-2405": [80, 77, 95, 84],
+    "RPS-2406": [88, 91, 72, 86],
+  };
+  const grade5StudentsInDb = await prisma.student.findMany({
+    where: { tenantId: tenant.id, admissionNo: { in: Object.keys(grade5MarkSheet) } },
+  });
+  for (const student of grade5StudentsInDb) {
+    const scores = grade5MarkSheet[student.admissionNo];
+    for (let index = 0; index < grade5SubjectIds.length; index += 1) {
+      await prisma.mark.create({
+        data: {
+          tenantId: tenant.id,
+          campusId: campus.id,
+          examId: term1.id,
+          subjectId: grade5SubjectIds[index],
+          studentId: student.id,
+          marks: scores[index],
+          enteredById: teacher.id,
+        },
+      });
+    }
+  }
+
+  await prisma.notice.create({
+    data: {
+      tenantId: tenant.id,
+      campusId: campus.id,
+      academicYearId: year.id,
+      audience: "SCHOOL",
+      title: "Sports day on 20 November",
+      body: "Children should wear the house T-shirt. Parents are welcome on the ground from 8 am.",
+      createdById: admin.id,
+    },
+  });
+  await prisma.notice.create({
+    data: {
+      tenantId: tenant.id,
+      campusId: campus.id,
+      academicYearId: year.id,
+      gradeId: grade5.id,
+      audience: "GRADE",
+      title: "Grade 5 parent meeting",
+      body: "The class teacher will meet parents on Friday at 4 pm in the Grade 5 A room.",
+      createdById: admin.id,
+    },
+  });
+
+  const aarav = await prisma.student.findFirstOrThrow({ where: { admissionNo: "RPS-2401" } });
+  await prisma.certificate.create({
+    data: {
+      tenantId: tenant.id,
+      campusId: campus.id,
+      studentId: aarav.id,
+      certificateNo: "BON-2026-0001",
+      purpose: "Passport application",
+      studentName: aarav.fullName,
+      admissionNo: aarav.admissionNo,
+      gradeName: "Grade 5",
+      sectionName: "A",
+      academicYearName: year.name,
+      campusName: campus.name,
+      issuedOn: day("2026-10-01"),
+      issuedById: admin.id,
+    },
+  });
+
+  const bell = [
+    ["09:00", "09:40"],
+    ["09:40", "10:20"],
+    ["10:40", "11:20"],
+    ["11:20", "12:00"],
+    ["12:00", "12:40"],
+  ] as const;
+  const week = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"] as const;
+  const rotation = ["English", "Hindi", "Mathematics", "Environmental Studies"];
+  await prisma.timetablePeriod.createMany({
+    data: week.flatMap((day, dayIndex) =>
+      bell.map(([startTime, endTime], slotIndex) => ({
+        tenantId: tenant.id,
+        campusId: campus.id,
+        sectionId: section5.id,
+        day,
+        startTime,
+        endTime,
+        subject: rotation[(dayIndex + slotIndex) % rotation.length],
+      })),
+    ),
   });
 
   console.log("Seeded Riverside Public School");

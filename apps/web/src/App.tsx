@@ -4,12 +4,17 @@ import { api, SessionUser } from "./api";
 import { Shell } from "./Shell";
 import { AdmissionsPage } from "./pages/AdmissionsPage";
 import { AttendancePage } from "./pages/AttendancePage";
+import { CertificatesPage } from "./pages/CertificatesPage";
 import { DashboardPage } from "./pages/DashboardPage";
+import { ExamsPage } from "./pages/ExamsPage";
 import { FeesPage } from "./pages/FeesPage";
+import { ReportCardsPage } from "./pages/ReportCardsPage";
 import { LoginPage } from "./pages/LoginPage";
+import { NoticesPage } from "./pages/NoticesPage";
 import { SetupPage } from "./pages/SetupPage";
 import { StudentPage } from "./pages/StudentPage";
 import { StudentsPage } from "./pages/StudentsPage";
+import { TimetablePage } from "./pages/TimetablePage";
 
 type AuthState = {
   user: SessionUser | null;
@@ -70,6 +75,13 @@ export function App() {
           <Route path="students/:id" element={<StudentPage />} />
           <Route path="attendance" element={<AttendancePage />} />
           <Route path="fees" element={<FeesPage />} />
+          <Route path="exams" element={<ExamsPage />} />
+          <Route path="notices" element={<NoticesPage />} />
+          <Route path="certificates" element={<CertificatesPage />} />
+          <Route path="certificates/:id" element={<CertificatesPage />} />
+          <Route path="timetable" element={<TimetablePage />} />
+          <Route path="report-cards" element={<ReportCardsPage />} />
+          <Route path="report-cards/:studentId" element={<ReportCardsPage />} />
         </Route>
       </Routes>
     </AuthContext.Provider>
